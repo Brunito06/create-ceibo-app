@@ -1,8 +1,24 @@
 import * as clack from "@clack/prompts";
 import path from "node:path";
-import { DEFAULT_LICENSE, DEFAULT_TEMPLATE, EXTRAS, LICENSES, TEMPLATES } from "./registry/index.js";
+import {
+  DEFAULT_FRAMEWORK,
+  DEFAULT_LICENSE,
+  DEFAULT_TEMPLATE,
+  EXTRAS,
+  FRAMEWORKS,
+  LICENSES,
+  TEMPLATES,
+} from "./registry/index.js";
 import type { ExtraDefinition } from "./registry/extras.js";
-import type { CliFlags, ExtraId, LicenseId, PackageManager, ProjectOptions, Template } from "./types.js";
+import type {
+  CliFlags,
+  ExtraId,
+  FrameworkId,
+  LicenseId,
+  PackageManager,
+  ProjectOptions,
+  Template,
+} from "./types.js";
 import { detectGitAuthor } from "./utils/detect-git-author.js";
 import { detectPackageManager } from "./utils/detect-package-manager.js";
 import { validateProjectName } from "./validate-project-name.js";
@@ -24,6 +40,16 @@ function unwrap<T>(value: T | symbol): T {
   return value;
 }
 
+function templateDef(id: string) {
+  return TEMPLATES.find((t) => t.id === id);
+}
+
+function allExtrasOff(): Record<ExtraId, boolean> {
+  return Object.fromEntries(
+    (EXTRAS as readonly ExtraDefinition[]).map((extra) => [extra.id, false]),
+  ) as Record<ExtraId, boolean>;
+}
+
 /**
  * Merges CLI flags with interactive prompts: any option already provided via
  * a flag is used as-is and never asked about. With `--yes`, every remaining
@@ -34,8 +60,25 @@ export async function resolveOptions(flags: CliFlags, cwd: string): Promise<Proj
   const projectName = await resolveProjectName(flags, cwd);
   const targetDir = path.resolve(cwd, projectName);
 
-  const template = flags.template ?? (await resolveTemplate(flags));
-  const extras = await resolveExtras(flags);
+  // An explicit --template pins the framework (a template only exists under
+  // one framework); an explicit --framework that conflicts with it is a user
+  // error we should surface clearly rather than silently pick one.
+  const templateFramework = flags.template ? templateDef(flags.template)?.framework : undefined;
+
+  if (flags.framework && templateFramework && flags.framework !== templateFramework) {
+    throw new Error(
+      `--template ${flags.template} is a ${templateFramework} template, which conflicts with --framework ${flags.framework}.`,
+    );
+  }
+
+  const framework = templateFramework ?? flags.framework ?? (await resolveFramework(flags));
+  const template = flags.template ?? (await resolveTemplate(flags, framework));
+
+  // Every extra shipped so far only applies to Next.js projects (they inject
+  // into src/app/layout.tsx, use Server Actions, App Router middleware...);
+  // other frameworks simply get none of them, without being prompted.
+  const extras = framework === "nextjs" ? await resolveExtras(flags) : allExtrasOff();
+
   const author = flags.author ?? (await resolveAuthor(flags));
   const description = flags.description ?? (await resolveDescription(flags));
   const license = flags.license ?? (await resolveLicense(flags));
@@ -44,6 +87,7 @@ export async function resolveOptions(flags: CliFlags, cwd: string): Promise<Proj
   return {
     projectName,
     targetDir,
+    framework,
     template,
     packageManager,
     author,
@@ -78,25 +122,47 @@ async function resolveProjectName(flags: CliFlags, cwd: string): Promise<string>
   return answer;
 }
 
-async function resolveTemplate(flags: CliFlags): Promise<Template> {
+async function resolveFramework(flags: CliFlags): Promise<FrameworkId> {
   if (flags.yes) {
-    return DEFAULT_TEMPLATE;
+    return DEFAULT_FRAMEWORK;
+  }
+
+  return unwrap(
+    await clack.select<FrameworkId>({
+      message: "Which framework do you want to use?",
+      options: FRAMEWORKS.map((f) => ({ value: f.id, label: f.label, hint: f.hint })),
+      initialValue: DEFAULT_FRAMEWORK,
+    }),
+  );
+}
+
+async function resolveTemplate(flags: CliFlags, framework: FrameworkId): Promise<Template> {
+  const choices = TEMPLATES.filter((t) => t.framework === framework);
+  const fallback = choices.find((t) => t.id === DEFAULT_TEMPLATE) ?? choices[0];
+
+  if (!fallback) {
+    throw new Error(`No templates registered for framework "${framework}".`);
+  }
+
+  if (flags.yes) {
+    return fallback.id;
   }
 
   return unwrap(
     await clack.select<Template>({
       message: "Which template do you want to start from?",
-      options: TEMPLATES.map((t) => ({ value: t.id, label: t.label, hint: t.hint })),
-      initialValue: DEFAULT_TEMPLATE,
+      options: choices.map((t) => ({ value: t.id, label: t.label, hint: t.hint })),
+      initialValue: fallback.id,
     }),
   );
 }
 
 /**
  * Resolves every registered extra in registry order, gating each on its
- * `dependsOn` (forced off, never prompted, if the dependency ended up off) —
- * relies on the registry listing a dependency before anything that depends
- * on it.
+ * `dependsOn` (forced off, never prompted, if the dependency ended up off)
+ * and `conflictsWith` (forced off if the conflicting extra ended up on) —
+ * relies on the registry listing a dependency/conflict before anything that
+ * references it.
  */
 async function resolveExtras(flags: CliFlags): Promise<Record<ExtraId, boolean>> {
   const extras = {} as Record<ExtraId, boolean>;
@@ -104,8 +170,14 @@ async function resolveExtras(flags: CliFlags): Promise<Record<ExtraId, boolean>>
   for (const extra of EXTRAS as readonly ExtraDefinition[]) {
     const id = extra.id as ExtraId;
     const dependsOn = extra.dependsOn as ExtraId | undefined;
+    const conflictsWith = extra.conflictsWith as ExtraId | undefined;
 
     if (dependsOn && !extras[dependsOn]) {
+      extras[id] = false;
+      continue;
+    }
+
+    if (conflictsWith && extras[conflictsWith]) {
       extras[id] = false;
       continue;
     }

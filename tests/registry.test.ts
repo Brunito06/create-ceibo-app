@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { EXTRAS, LICENSES, TEMPLATES } from "../src/registry/index.js";
+import { EXTRAS, FRAMEWORKS, LICENSES, TEMPLATES } from "../src/registry/index.js";
 import type { ExtraDefinition } from "../src/registry/extras.js";
 import type { LicenseDefinition } from "../src/registry/licenses.js";
 
@@ -20,6 +20,25 @@ describe("registry", () => {
     }
   });
 
+  it("has a unique id per framework, and every template references a real framework", () => {
+    const frameworkIds = new Set(FRAMEWORKS.map((f) => f.id));
+    expect(frameworkIds.size).toBe(FRAMEWORKS.length);
+
+    for (const template of TEMPLATES) {
+      expect(frameworkIds.has(template.framework)).toBe(true);
+    }
+  });
+
+  it("has at least one template per framework, with a base layer directory", () => {
+    for (const framework of FRAMEWORKS) {
+      const templatesForFramework = TEMPLATES.filter((t) => t.framework === framework.id);
+      expect(templatesForFramework.length).toBeGreaterThan(0);
+
+      const baseDir = framework.id === "nextjs" ? "base" : `${framework.id}-base`;
+      expect(existsSync(path.join(TEMPLATES_ROOT, baseDir))).toBe(true);
+    }
+  });
+
   it("has a unique id per extra, with a matching layer directory", () => {
     const ids = EXTRAS.map((e) => e.id);
     expect(new Set(ids).size).toBe(ids.length);
@@ -29,12 +48,15 @@ describe("registry", () => {
     }
   });
 
-  it("only references dependsOn ids that exist and appear earlier in the list", () => {
+  it("only references dependsOn/conflictsWith ids that exist and appear earlier in the list", () => {
     const seen = new Set<string>();
 
     for (const extra of EXTRAS as readonly ExtraDefinition[]) {
       if (extra.dependsOn) {
         expect(seen.has(extra.dependsOn)).toBe(true);
+      }
+      if (extra.conflictsWith) {
+        expect(seen.has(extra.conflictsWith)).toBe(true);
       }
       seen.add(extra.id);
     }

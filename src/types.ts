@@ -1,9 +1,11 @@
 import type { ExtraId } from "./registry/extras.js";
+import type { FrameworkId } from "./registry/frameworks.js";
 import type { LicenseId } from "./registry/licenses.js";
 import type { Template } from "./registry/templates.js";
 
 export type { Template } from "./registry/templates.js";
 export type { ExtraId } from "./registry/extras.js";
+export type { FrameworkId } from "./registry/frameworks.js";
 export type { LicenseId } from "./registry/licenses.js";
 
 export type PackageManager = "npm" | "pnpm";
@@ -11,6 +13,7 @@ export type PackageManager = "npm" | "pnpm";
 export interface ProjectOptions extends Record<ExtraId, boolean> {
   projectName: string;
   targetDir: string;
+  framework: FrameworkId;
   template: Template;
   packageManager: PackageManager;
   skipInstall: boolean;
@@ -26,6 +29,7 @@ export interface ProjectOptions extends Record<ExtraId, boolean> {
  */
 export interface CliFlags extends Partial<Record<ExtraId, boolean>> {
   projectName?: string;
+  framework?: FrameworkId;
   template?: Template;
   packageManager?: PackageManager;
   author?: string;
@@ -34,4 +38,6 @@ export interface CliFlags extends Partial<Record<ExtraId, boolean>> {
   skipInstall: boolean;
   skipGit: boolean;
   yes: boolean;
+  configPath?: string;
+  saveConfig: boolean;
 }

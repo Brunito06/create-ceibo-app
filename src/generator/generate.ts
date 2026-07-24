@@ -22,12 +22,21 @@ const TEMPLATES_ROOT = findTemplatesRoot(__dirname);
  * tests, bypassing the interactive gating.
  */
 export function resolveLayers(options: ProjectOptions): string[] {
+  if (options.framework !== "nextjs") {
+    // Every extra shipped so far is Next.js-specific (layout.tsx injection,
+    // Server Actions, App Router middleware), so other frameworks only ever
+    // get their own base + template layer.
+    return [`${options.framework}-base`, options.template];
+  }
+
   const layers = ["base", options.template];
 
   for (const extra of EXTRAS as readonly ExtraDefinition[]) {
     const dependsOn = extra.dependsOn as ExtraId | undefined;
+    const conflictsWith = extra.conflictsWith as ExtraId | undefined;
     const dependencyOk = !dependsOn || options[dependsOn];
-    if (options[extra.id as ExtraId] && dependencyOk) {
+    const conflictOk = !conflictsWith || !options[conflictsWith];
+    if (options[extra.id as ExtraId] && dependencyOk && conflictOk) {
       layers.push(extra.layer);
     }
   }
@@ -80,6 +89,10 @@ export async function generateProject(options: ProjectOptions): Promise<void> {
  * replaced, even with an empty string, so none ever survive into output.
  */
 async function applyLayoutInjections(options: ProjectOptions): Promise<void> {
+  if (options.framework !== "nextjs") {
+    return;
+  }
+
   const layoutPath = path.join(options.targetDir, "src", "app", "layout.tsx");
 
   const chosen = (EXTRAS as readonly ExtraDefinition[]).filter(

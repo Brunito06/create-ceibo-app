@@ -23,7 +23,7 @@ npx create-ceibo-app my-app
 pnpm create ceibo-app my-app
 ```
 
-Answer the prompts (template, extras, author, description, license, package manager) and you're done. Prefer a one-liner? Pass everything as flags instead:
+Answer the prompts (framework, template, extras, author, description, license, package manager) and you're done. Prefer a one-liner? Pass everything as flags instead:
 
 ```bash
 npx create-ceibo-app my-app --template dashboard --supabase --auth --pwa --pm pnpm
@@ -34,11 +34,16 @@ npx create-ceibo-app my-app --template dashboard --supabase --auth --pwa --pm pn
 | Flag                    | Description                                              | Default                    |
 | ------------------------ | ---------------------------------------------------------- | ---------------------------- |
 | `[project-name]`         | Project name / target directory. Prompted if omitted.      | —                             |
-| `-t, --template <name>`  | `landing` \| `dashboard` \| `blank` \| `blog` \| `ecommerce` | prompted                    |
-| `--supabase`             | Include Supabase client setup                              | prompted                     |
+| `-f, --framework <name>` | `nextjs` \| `astro`                                         | prompted                     |
+| `-t, --template <name>`  | Depends on `--framework` — see the tables below             | prompted                     |
+| `--supabase`             | Include Supabase client setup (Next.js only)                | prompted                     |
 | `--no-supabase`          | Skip Supabase                                               | —                             |
 | `--auth`                 | Include email/password auth (requires Supabase)            | prompted                     |
 | `--no-auth`              | Skip auth                                                   | —                             |
+| `--authjs`               | Include Auth.js/NextAuth GitHub OAuth (conflicts with `--auth`) | prompted                 |
+| `--no-authjs`            | Skip Auth.js                                                | —                             |
+| `--forms`                | Include a react-hook-form + zod example contact form        | prompted                     |
+| `--no-forms`             | Skip the forms extra                                        | —                             |
 | `--pwa`                  | Configure as a PWA (manifest, service worker, icons)        | prompted                     |
 | `--no-pwa`               | Skip PWA setup                                              | —                             |
 | `--stripe`               | Include Stripe checkout + pricing page                      | prompted                     |
@@ -51,15 +56,21 @@ npx create-ceibo-app my-app --template dashboard --supabase --auth --pwa --pm pn
 | `--description <text>`   | Short project description, written to `package.json`        | prompted                     |
 | `--license <id>`         | `MIT` \| `Apache-2.0` \| `None`                              | prompted                     |
 | `--pm <manager>`         | `npm` \| `pnpm`                                             | detected from how you ran it |
+| `--config <path>`        | Load defaults from a previously saved `ceibo.config.json`   | —                             |
+| `--no-save-config`       | Don't write `ceibo.config.json` into the generated project  | —                             |
 | `--skip-install`         | Don't run the package manager install step                 | `false`                       |
 | `--no-git`               | Don't run `git init` / initial commit                      | —                             |
 | `-y, --yes`              | Use defaults for anything not passed as a flag              | `false`                       |
 
-With `--yes`, unset options default to: `dashboard` template, Supabase **on**, auth **on**, PWA/Stripe/Drizzle/Analytics **off**, MIT license.
+With `--yes`, unset options default to: `nextjs` framework, `dashboard` template, Supabase **on**, auth **on**, everything else **off**, MIT license.
+
+An explicit `--template` pins the framework automatically (e.g. `--template astro-blog` implies `--framework astro`) — passing a conflicting `--framework`/`--template` pair is an error.
 
 ## What each template includes
 
-Every project gets the same foundation regardless of template:
+### Next.js (`--framework nextjs`, the default)
+
+Every Next.js project gets the same foundation regardless of template:
 
 - Next.js 15 (App Router), TypeScript in strict mode, `src/` directory.
 - Tailwind CSS v4 + shadcn/ui (`new-york` style), with `button`, `card`, `input`, `label`, `dialog`, `dropdown-menu` and `sonner` (toasts) already installed.
@@ -76,17 +87,57 @@ Every project gets the same foundation regardless of template:
 | `blank`      | The shared foundation only — a single minimal page.                     |
 | `blog`       | Post list + post detail pages, backed by a static sample array (no CMS/MDX). |
 | `ecommerce`  | Product grid, product detail, and a cart page backed by a `localStorage` cart hook. |
+| `portfolio`  | Single-page site: hero, projects grid, experience timeline, contact.    |
+| `waitlist`   | Email-capture landing page with a working Server Action (no email/DB provider wired up by default). |
+| `docs`       | Sidebar navigation + content pages, defined as a plain array (no MDX).  |
+| `admin`      | A searchable, sortable customers table over mock data.                 |
 
 | Extra         | Adds                                                                 |
 | ------------- | ----------------------------------------------------------------------- |
 | `--supabase`  | `src/lib/supabase/{client,server,middleware}.ts`, session-refresh middleware, `.env.example`. |
 | `--auth`      | Login/register pages, a protected `/profile` page, and route-protection middleware (requires `--supabase`). |
+| `--authjs`    | GitHub OAuth via Auth.js/NextAuth, a protected `/authjs-demo` page (conflicts with `--auth` — pick one). |
+| `--forms`     | A `/contact` page using react-hook-form + zod, ready to reuse for other forms. |
 | `--pwa`       | Web app manifest, a hand-written service worker, placeholder icons.      |
 | `--stripe`    | A single pricing/checkout page wired to a Stripe Checkout Session (server action + hosted redirect, no `@stripe/stripe-js`). |
 | `--drizzle`   | Drizzle ORM schema + client against Supabase's Postgres connection string, plus `db:push`/`db:studio` scripts (requires `--supabase`). |
 | `--analytics` | `@vercel/analytics` wired into the root layout.                         |
 
 `--pwa` and `--analytics` both need to add something to `src/app/layout.tsx`; they compose safely together via a small marker-based injection step in `generateProject` rather than one overwriting the other's file.
+
+### Astro (`--framework astro`)
+
+A separate, minimal foundation — no shadcn/ui, no extras (all extras above are Next.js-specific):
+
+- Astro 5 with the Content Layer API, TypeScript strict mode.
+- Tailwind CSS v4 via `@tailwindcss/vite` (no `tailwind.config.js`).
+- CSS-only dark mode (`prefers-color-scheme`, no toggle component).
+
+| Template      | Adds                                                    |
+| -------------- | -------------------------------------------------------- |
+| `astro-blank`  | A single minimal page.                                  |
+| `astro-blog`   | Post list + post detail, content defined as Markdown files under `src/content/posts/`. |
+
+## Replaying the same setup
+
+Every generated project gets a `ceibo.config.json` recording the resolved framework/template/extras/author/description/license (unless you pass `--no-save-config`). Reuse it on a future run to skip every prompt:
+
+```bash
+npx create-ceibo-app another-app --config ./my-app/ceibo.config.json -y
+```
+
+An explicit CLI flag always overrides the config file, which in turn overrides interactive prompting.
+
+## Adding an extra later
+
+Extras aren't locked in at generation time — `add <extra>` applies one to an already-generated project:
+
+```bash
+cd my-app
+npx create-ceibo-app add stripe
+```
+
+It merges the extra's `package.json` fragment into your existing one, respects `dependsOn`/`conflictsWith` (reading them from `ceibo.config.json` if present), and updates that config file afterward. One caveat: extras that inject into `src/app/layout.tsx` (`pwa`, `analytics`) can only do that automatically during initial generation — added later, the command prints the exact snippet to paste in by hand.
 
 ## Local development
 
@@ -106,7 +157,9 @@ node dist/index.js test-app --yes --skip-install --no-git
 | `npm run typecheck`   | Type-check with `tsc --noEmit`              |
 | `npm test`            | Run the test suite (Vitest)                 |
 
-Templates live under `templates/` and are copied as-is (with `__APP_NAME__` / `__APP_TITLE__` token replacement) — they're not compiled, so you can edit them directly and re-run the CLI to see the result. Generation works in layers: `base` → the chosen template → each chosen extra, applied in that order; `package.json` fragments are deep-merged rather than overwritten, and `CLAUDE.md` / `README.md` sections are appended.
+Templates live under `templates/` and are copied as-is (with `__APP_NAME__`, `__APP_TITLE__`, `__AUTHOR__`, `__DESCRIPTION__` and `__YEAR__` token replacement) — they're not compiled, so you can edit them directly and re-run the CLI to see the result. For Next.js, generation works in layers: `base` → the chosen template → each chosen extra, applied in that order; `package.json` fragments are deep-merged rather than overwritten, `CLAUDE.md`/`README.md`/`.env.example` sections are appended, and extras that touch `src/app/layout.tsx` splice into markers left there rather than overwriting the file. Other frameworks (Astro) just use their own `<framework>-base` + template layer — no extras yet.
+
+Templates, extras, frameworks and licenses are all defined in `src/registry/` — adding a new one is "add a `templates/<id>` folder + one registry entry," not a change to the CLI's parsing/prompting/generation code.
 
 ## Contributing
 

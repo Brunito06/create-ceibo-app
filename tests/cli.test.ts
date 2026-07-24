@@ -72,6 +72,22 @@ describe("parseCli", () => {
     expect(flags.license).toBe("MIT");
   });
 
+  it("parses --framework", () => {
+    const flags = parseCli(argv("my-app", "--framework", "astro"));
+    expect(flags.framework).toBe("astro");
+  });
+
+  it("parses --config and defaults saveConfig to true", () => {
+    const flags = parseCli(argv("my-app", "--config", "./other-app/ceibo.config.json"));
+    expect(flags.configPath).toBe("./other-app/ceibo.config.json");
+    expect(flags.saveConfig).toBe(true);
+  });
+
+  it("parses --no-save-config", () => {
+    const flags = parseCli(argv("my-app", "--no-save-config"));
+    expect(flags.saveConfig).toBe(false);
+  });
+
   it.each(EXTRAS)("maps --$id and --no-$id for every registered extra", (extra) => {
     expect(parseCli(argv("my-app", `--${extra.id}`))[extra.id]).toBe(true);
     expect(parseCli(argv("my-app", `--no-${extra.id}`))[extra.id]).toBe(false);

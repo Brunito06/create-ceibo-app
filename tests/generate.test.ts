@@ -10,9 +10,12 @@ function baseOptions(overrides: Partial<ProjectOptions>): ProjectOptions {
   return {
     projectName: "test-app",
     targetDir: "",
+    framework: "nextjs",
     template: "blank",
     supabase: false,
     auth: false,
+    authjs: false,
+    forms: false,
     pwa: false,
     stripe: false,
     drizzle: false,
@@ -124,6 +127,160 @@ describe("generateProject", () => {
 
     const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
     expect(pkg.dependencies["@supabase/ssr"]).toBeUndefined();
+  });
+
+  it("generates an astro-blank project with no Next.js files and every extra off", async () => {
+    const targetDir = path.join(workDir, "astro-blank-app");
+    const options = baseOptions({
+      targetDir,
+      framework: "astro",
+      template: "astro-blank",
+    });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "astro.config.mjs"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "pages", "index.astro"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "layouts", "BaseLayout.astro"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app"))).toBe(false);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies.astro).toBeDefined();
+    expect(pkg.dependencies.next).toBeUndefined();
+
+    const page = readFileSync(file(targetDir, "src", "pages", "index.astro"), "utf8");
+    expect(page).not.toContain("__APP_TITLE__");
+    expect(page).toContain("Test App");
+  });
+
+  it("generates an astro-blog project with sample posts and no Next.js extras applied", async () => {
+    const targetDir = path.join(workDir, "astro-blog-app");
+    const options = baseOptions({
+      targetDir,
+      framework: "astro",
+      template: "astro-blog",
+      supabase: true, // ignored entirely for non-nextjs frameworks
+    });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "content.config.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "content", "posts", "hello-world.md"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "pages", "posts", "[id].astro"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "lib", "supabase"))).toBe(false);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies["@supabase/ssr"]).toBeUndefined();
+
+    const post = readFileSync(file(targetDir, "src", "content", "posts", "hello-world.md"), "utf8");
+    expect(post).not.toContain("__APP_TITLE__");
+  });
+
+  it("generates a portfolio project with projects and experience content", async () => {
+    const targetDir = path.join(workDir, "portfolio-app");
+    const options = baseOptions({ targetDir, template: "portfolio" });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "lib", "projects.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "lib", "experience.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "components", "shared", "project-card.tsx"))).toBe(
+      true,
+    );
+
+    const page = readFileSync(file(targetDir, "src", "app", "page.tsx"), "utf8");
+    expect(page).not.toContain("__APP_TITLE__");
+  });
+
+  it("generates a waitlist project with a working email-capture action", async () => {
+    const targetDir = path.join(workDir, "waitlist-app");
+    const options = baseOptions({ targetDir, template: "waitlist" });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "lib", "waitlist-actions.ts"))).toBe(true);
+    expect(
+      existsSync(file(targetDir, "src", "components", "shared", "waitlist-form.tsx")),
+    ).toBe(true);
+
+    const actions = readFileSync(file(targetDir, "src", "lib", "waitlist-actions.ts"), "utf8");
+    expect(actions).toContain('"use server"');
+  });
+
+  it("generates a docs project with sidebar navigation and content pages", async () => {
+    const targetDir = path.join(workDir, "docs-app");
+    const options = baseOptions({ targetDir, template: "docs" });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "lib", "docs.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "components", "shared", "docs-sidebar.tsx"))).toBe(
+      true,
+    );
+    expect(existsSync(file(targetDir, "src", "app", "docs", "layout.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app", "docs", "page.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app", "docs", "[slug]", "page.tsx"))).toBe(true);
+
+    const docs = readFileSync(file(targetDir, "src", "lib", "docs.ts"), "utf8");
+    expect(docs).not.toContain("__APP_TITLE__");
+  });
+
+  it("generates an admin project with a customers table", async () => {
+    const targetDir = path.join(workDir, "admin-app");
+    const options = baseOptions({ targetDir, template: "admin" });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "lib", "customers.ts"))).toBe(true);
+    expect(
+      existsSync(file(targetDir, "src", "components", "shared", "customers-table.tsx")),
+    ).toBe(true);
+  });
+
+  it("generates a project with authjs standalone (no supabase required)", async () => {
+    const targetDir = path.join(workDir, "authjs-app");
+    const options = baseOptions({ targetDir, authjs: true });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "auth.ts"))).toBe(true);
+    expect(
+      existsSync(file(targetDir, "src", "app", "api", "auth", "[...nextauth]", "route.ts")),
+    ).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app", "authjs-demo", "page.tsx"))).toBe(true);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies["next-auth"]).toBeDefined();
+  });
+
+  it("does not apply authjs when supabase auth is already selected (conflictsWith)", async () => {
+    const targetDir = path.join(workDir, "auth-conflict-app");
+    const options = baseOptions({ targetDir, supabase: true, auth: true, authjs: true });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "auth.ts"))).toBe(false);
+    expect(existsSync(file(targetDir, "src", "app", "login", "page.tsx"))).toBe(true);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies["next-auth"]).toBeUndefined();
+  });
+
+  it("generates a project with the forms extra (react-hook-form + zod contact form)", async () => {
+    const targetDir = path.join(workDir, "forms-app");
+    const options = baseOptions({ targetDir, forms: true });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "lib", "validations", "contact.ts"))).toBe(true);
+    expect(
+      existsSync(file(targetDir, "src", "components", "shared", "contact-form.tsx")),
+    ).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app", "contact", "page.tsx"))).toBe(true);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies["react-hook-form"]).toBeDefined();
+    expect(pkg.dependencies.zod).toBeDefined();
   });
 
   it("generates a project with stripe standalone (no supabase required)", async () => {

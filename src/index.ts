@@ -1,17 +1,31 @@
+import path from "node:path";
 import pc from "picocolors";
+import { runAddExtra } from "./add-extra.js";
 import { parseCli } from "./cli.js";
 import { generateProject } from "./generator/generate.js";
 import { PromptCancelledError, resolveOptions } from "./prompts.js";
 import { initGit } from "./steps/init-git.js";
 import { installDependencies } from "./steps/install-dependencies.js";
 import { rollback } from "./steps/rollback.js";
-import type { ProjectOptions } from "./types.js";
+import type { CliFlags, ProjectOptions } from "./types.js";
+import { applyConfigDefaults, loadConfigFile, saveConfigFile } from "./utils/config-file.js";
 import { intro, logError, logStep, logWarn, outroFail, outroSuccess, printNextSteps, spinner } from "./utils/logger.js";
 
 async function main(): Promise<void> {
+  if (process.argv[2] === "add") {
+    await runAddExtra(process.argv.slice(3));
+    return;
+  }
+
   intro();
 
-  const flags = parseCli(process.argv);
+  let flags: CliFlags = parseCli(process.argv);
+
+  if (flags.configPath) {
+    const saved = await loadConfigFile(path.resolve(process.cwd(), flags.configPath));
+    flags = applyConfigDefaults(flags, saved);
+  }
+
   let options: ProjectOptions;
 
   try {
@@ -29,6 +43,9 @@ async function main(): Promise<void> {
   try {
     s.start("Generating project files");
     await generateProject(options);
+    if (flags.saveConfig) {
+      await saveConfigFile(options);
+    }
     s.stop("Project files generated");
 
     if (options.skipInstall) {

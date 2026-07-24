@@ -23,6 +23,7 @@ const TEXT_EXTENSIONS = new Set([
   ".yaml",
   ".txt",
   ".html",
+  ".astro",
 ]);
 
 export interface CopyLayerOptions {

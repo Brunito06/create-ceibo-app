@@ -16,6 +16,8 @@ export interface ExtraDefinition {
   layer: string;
   /** If set, this extra is forced off (never prompted) unless the named extra is also on. */
   dependsOn?: string;
+  /** If set, this extra is forced off (never prompted) if the named extra is already on. Must appear after it in this list. */
+  conflictsWith?: string;
   promptMessage: string;
   yesDefault: boolean;
   layoutInjection?: LayoutInjection;
@@ -38,6 +40,23 @@ export const EXTRAS = [
     dependsOn: "supabase",
     promptMessage: "Include email/password auth (login, register, protected routes)?",
     yesDefault: true,
+  },
+  {
+    id: "authjs",
+    label: "Auth.js (NextAuth)",
+    hint: "GitHub OAuth, alternative to the Supabase auth extra",
+    layer: "extras/authjs",
+    conflictsWith: "auth",
+    promptMessage: "Include Auth.js / NextAuth (GitHub OAuth, alternative to Supabase auth)?",
+    yesDefault: false,
+  },
+  {
+    id: "forms",
+    label: "Forms",
+    hint: "react-hook-form + zod example contact form",
+    layer: "extras/forms",
+    promptMessage: "Include a react-hook-form + zod example form?",
+    yesDefault: false,
   },
   {
     id: "pwa",

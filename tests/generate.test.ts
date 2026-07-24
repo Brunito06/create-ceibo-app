@@ -14,9 +14,15 @@ function baseOptions(overrides: Partial<ProjectOptions>): ProjectOptions {
     supabase: false,
     auth: false,
     pwa: false,
+    stripe: false,
+    drizzle: false,
+    analytics: false,
     packageManager: "npm",
     skipInstall: true,
     skipGit: true,
+    author: "Test Author",
+    description: "A test project.",
+    license: "MIT",
     ...overrides,
   };
 }
@@ -118,5 +124,170 @@ describe("generateProject", () => {
 
     const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
     expect(pkg.dependencies["@supabase/ssr"]).toBeUndefined();
+  });
+
+  it("generates a project with stripe standalone (no supabase required)", async () => {
+    const targetDir = path.join(workDir, "stripe-app");
+    const options = baseOptions({ targetDir, stripe: true });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "lib", "stripe", "server.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "lib", "stripe", "actions.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app", "pricing", "page.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, ".env.example"))).toBe(true);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies.stripe).toBeDefined();
+  });
+
+  it("forces drizzle off when supabase is not selected, even if requested", async () => {
+    const targetDir = path.join(workDir, "drizzle-no-supabase-app");
+    const options = baseOptions({ targetDir, drizzle: true, supabase: false });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "drizzle.config.ts"))).toBe(false);
+    expect(existsSync(file(targetDir, "src", "lib", "db"))).toBe(false);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies["drizzle-orm"]).toBeUndefined();
+  });
+
+  it("generates a project with supabase + drizzle, merging both .env.example blocks", async () => {
+    const targetDir = path.join(workDir, "supabase-drizzle-app");
+    const options = baseOptions({ targetDir, supabase: true, drizzle: true });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "drizzle.config.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "lib", "db", "schema.ts"))).toBe(true);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies["drizzle-orm"]).toBeDefined();
+    expect(pkg.dependencies["@supabase/ssr"]).toBeDefined();
+
+    const env = readFileSync(file(targetDir, ".env.example"), "utf8");
+    expect(env).toContain("NEXT_PUBLIC_SUPABASE_URL");
+    expect(env).toContain("DATABASE_URL");
+  });
+
+  it("generates a project with analytics wired into layout.tsx", async () => {
+    const targetDir = path.join(workDir, "analytics-app");
+    const options = baseOptions({ targetDir, analytics: true });
+
+    await generateProject(options);
+
+    const layout = readFileSync(file(targetDir, "src", "app", "layout.tsx"), "utf8");
+    expect(layout).toContain('import { Analytics } from "@vercel/analytics/next";');
+    expect(layout).toContain("<Analytics />");
+    expect(layout).not.toContain("__LAYOUT_IMPORTS__");
+    expect(layout).not.toContain("__LAYOUT_EXPORTS__");
+    expect(layout).not.toContain("__BODY_EXTRAS__");
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies["@vercel/analytics"]).toBeDefined();
+  });
+
+  it("composes pwa + analytics layout injections instead of one overwriting the other", async () => {
+    const targetDir = path.join(workDir, "pwa-analytics-app");
+    const options = baseOptions({ targetDir, pwa: true, analytics: true });
+
+    await generateProject(options);
+
+    const layout = readFileSync(file(targetDir, "src", "app", "layout.tsx"), "utf8");
+    expect(layout).toContain("RegisterServiceWorker");
+    expect(layout).toContain("<Analytics />");
+    expect(layout).not.toContain("__LAYOUT_IMPORTS__");
+    expect(layout).not.toContain("__LAYOUT_EXPORTS__");
+    expect(layout).not.toContain("__BODY_EXTRAS__");
+  });
+
+  it("generates a blog project with sample posts and a working slug page", async () => {
+    const targetDir = path.join(workDir, "blog-app");
+    const options = baseOptions({ targetDir, template: "blog" });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "lib", "posts.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "components", "shared", "post-card.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app", "page.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app", "posts", "[slug]", "page.tsx"))).toBe(true);
+
+    const posts = readFileSync(file(targetDir, "src", "lib", "posts.ts"), "utf8");
+    expect(posts).not.toContain("__APP_TITLE__");
+    expect(posts).not.toContain("__AUTHOR__");
+    expect(posts).toContain(options.author);
+  });
+
+  it("generates an ecommerce project with products, cart hook and cart page", async () => {
+    const targetDir = path.join(workDir, "ecommerce-app");
+    const options = baseOptions({ targetDir, template: "ecommerce" });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "lib", "products.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "hooks", "use-cart.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "components", "shared", "store-header.tsx"))).toBe(true);
+    expect(
+      existsSync(file(targetDir, "src", "components", "shared", "add-to-cart-button.tsx")),
+    ).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app", "page.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app", "products", "[slug]", "page.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app", "cart", "page.tsx"))).toBe(true);
+
+    const cartHook = readFileSync(file(targetDir, "src", "hooks", "use-cart.ts"), "utf8");
+    expect(cartHook).not.toContain("__APP_NAME__");
+    expect(cartHook).toContain(options.projectName);
+  });
+
+  it("writes author/description into package.json and a LICENSE file for MIT", async () => {
+    const targetDir = path.join(workDir, "mit-app");
+    const options = baseOptions({
+      targetDir,
+      author: "Ada Lovelace",
+      description: "A lovely app.",
+      license: "MIT",
+    });
+
+    await generateProject(options);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.author).toBe("Ada Lovelace");
+    expect(pkg.description).toBe("A lovely app.");
+    expect(pkg.license).toBe("MIT");
+
+    expect(existsSync(file(targetDir, "LICENSE"))).toBe(true);
+    const license = readFileSync(file(targetDir, "LICENSE"), "utf8");
+    expect(license).toContain("MIT License");
+    expect(license).toContain("Ada Lovelace");
+    expect(license).not.toContain("__AUTHOR__");
+    expect(license).not.toContain("__YEAR__");
+  });
+
+  it("writes an Apache-2.0 LICENSE file when selected", async () => {
+    const targetDir = path.join(workDir, "apache-app");
+    const options = baseOptions({ targetDir, license: "Apache-2.0", author: "Grace Hopper" });
+
+    await generateProject(options);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.license).toBe("Apache-2.0");
+
+    const license = readFileSync(file(targetDir, "LICENSE"), "utf8");
+    expect(license).toContain("Apache License");
+    expect(license).toContain("Grace Hopper");
+  });
+
+  it("omits the LICENSE file and package.json license field when license is None", async () => {
+    const targetDir = path.join(workDir, "no-license-app");
+    const options = baseOptions({ targetDir, license: "None" });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "LICENSE"))).toBe(false);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.license).toBeUndefined();
   });
 });

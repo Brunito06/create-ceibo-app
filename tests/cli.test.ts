@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { parseCli } from "../src/cli.js";
+import { EXTRAS } from "../src/registry/index.js";
 
 function argv(...args: string[]): string[] {
   return ["node", "create-ceibo-app", ...args];
@@ -59,5 +60,21 @@ describe("parseCli", () => {
   it("parses --yes", () => {
     const flags = parseCli(argv("my-app", "-y"));
     expect(flags.yes).toBe(true);
+  });
+
+  it("parses --author, --description and --license", () => {
+    const flags = parseCli(
+      argv("my-app", "--author", "Ada Lovelace", "--description", "A lovely app.", "--license", "MIT"),
+    );
+
+    expect(flags.author).toBe("Ada Lovelace");
+    expect(flags.description).toBe("A lovely app.");
+    expect(flags.license).toBe("MIT");
+  });
+
+  it.each(EXTRAS)("maps --$id and --no-$id for every registered extra", (extra) => {
+    expect(parseCli(argv("my-app", `--${extra.id}`))[extra.id]).toBe(true);
+    expect(parseCli(argv("my-app", `--no-${extra.id}`))[extra.id]).toBe(false);
+    expect(parseCli(argv("my-app"))[extra.id]).toBeUndefined();
   });
 });

@@ -12,9 +12,9 @@ export async function initGit(targetDir: string): Promise<void> {
       env: {
         ...process.env,
         GIT_AUTHOR_NAME: "create-ceibo-app",
-        GIT_AUTHOR_EMAIL: "noreply@ceibolabs.dev",
+        GIT_AUTHOR_EMAIL: "bruno@ceibolabs.dev",
         GIT_COMMITTER_NAME: "create-ceibo-app",
-        GIT_COMMITTER_EMAIL: "noreply@ceibolabs.dev",
+        GIT_COMMITTER_EMAIL: "bruno@ceibolabs.dev",
       },
     },
   );

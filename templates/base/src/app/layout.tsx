@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/shared/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
 import "./globals.css";
+// __LAYOUT_IMPORTS__
 
 const inter = Inter({
   subsets: ["latin"],
@@ -15,6 +16,8 @@ export const metadata: Metadata = {
   title: "__APP_TITLE__",
   description: "Built with __APP_TITLE__.",
 };
+
+// __LAYOUT_EXPORTS__
 
 export default function RootLayout({
   children,
@@ -28,6 +31,7 @@ export default function RootLayout({
           {children}
           <Toaster />
         </ThemeProvider>
+        {/* __BODY_EXTRAS__ */}
       </body>
     </html>
   );

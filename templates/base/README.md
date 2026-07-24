@@ -1,6 +1,6 @@
 # __APP_TITLE__
 
-Built with [create-ceibo-app](https://github.com/ceibolabs/create-ceibo-app) — Next.js, Tailwind CSS v4 and shadcn/ui.
+Built with [create-ceibo-app](https://github.com/Brunito06/create-ceibo-app) — Next.js, Tailwind CSS v4 and shadcn/ui.
 
 ## Getting started
 

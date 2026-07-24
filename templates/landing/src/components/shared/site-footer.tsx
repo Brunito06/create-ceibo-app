@@ -8,7 +8,7 @@ export function SiteFooter() {
         <p>
           Built with{" "}
           <a
-            href="https://github.com/ceibolabs/create-ceibo-app"
+            href="https://github.com/Brunito06/create-ceibo-app"
             target="_blank"
             rel="noreferrer"
             className="underline underline-offset-4"

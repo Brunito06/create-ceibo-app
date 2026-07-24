@@ -7,7 +7,7 @@ import path from "node:path";
  * file, so e.g. the Supabase extra's "## Supabase" section survives
  * alongside the base template's CLAUDE.md.
  */
-const APPENDABLE_FILES = new Set(["CLAUDE.md", "README.md"]);
+const APPENDABLE_FILES = new Set(["CLAUDE.md", "README.md", ".env.example"]);
 
 const TEXT_EXTENSIONS = new Set([
   ".ts",
@@ -94,7 +94,7 @@ async function readExistingIfAny(filePath: string): Promise<string | undefined> 
   }
 }
 
-function applyTokens(content: string, tokens: Record<string, string>): string {
+export function applyTokens(content: string, tokens: Record<string, string>): string {
   let result = content;
   for (const [token, value] of Object.entries(tokens)) {
     result = result.split(token).join(value);

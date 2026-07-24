@@ -1,7 +1,7 @@
 {
   "name": "create-ceibo-app",
   "version": "0.1.0",
-  "description": "Scaffold a new Next.js + Supabase + Tailwind + shadcn/ui project with Ceibo Labs conventions.",
+  "description": "Scaffold a new Next.js + Supabase + Tailwind + shadcn/ui project with Brunito06 conventions.",
   "keywords": [
     "create-app",
     "scaffold",
@@ -17,18 +17,18 @@
     "starter",
     "template"
   ],
-  "homepage": "https://github.com/ceibolabs/create-ceibo-app#readme",
+  "homepage": "https://github.com/Brunito06/create-ceibo-app#readme",
   "bugs": {
-    "url": "https://github.com/ceibolabs/create-ceibo-app/issues"
+    "url": "https://github.com/Brunito06/create-ceibo-app/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ceibolabs/create-ceibo-app.git"
+    "url": "git+https://github.com/Brunito06/create-ceibo-app.git"
   },
   "license": "MIT",
   "author": {
-    "name": "Ceibo Labs",
-    "url": "https://github.com/ceibolabs"
+    "name": "Brunito06",
+    "url": "https://github.com/Brunito06"
   },
   "type": "module",
   "bin": {

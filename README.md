@@ -1,6 +1,6 @@
 # create-ceibo-app
 
-Scaffold a new **Next.js + Supabase + Tailwind CSS + shadcn/ui** project, pre-wired with [Ceibo Labs](https://github.com/ceibolabs)' conventions, in one command.
+Scaffold a new **Next.js + Supabase + Tailwind CSS + shadcn/ui** project, pre-wired with [Brunito06](https://github.com/Brunito06)'s conventions, in one command.
 
 ```bash
 npx create-ceibo-app my-app
@@ -23,7 +23,7 @@ npx create-ceibo-app my-app
 pnpm create ceibo-app my-app
 ```
 
-Answer the prompts (project type, Supabase, auth, PWA, package manager) and you're done. Prefer a one-liner? Pass everything as flags instead:
+Answer the prompts (template, extras, author, description, license, package manager) and you're done. Prefer a one-liner? Pass everything as flags instead:
 
 ```bash
 npx create-ceibo-app my-app --template dashboard --supabase --auth --pwa --pm pnpm
@@ -34,19 +34,28 @@ npx create-ceibo-app my-app --template dashboard --supabase --auth --pwa --pm pn
 | Flag                    | Description                                              | Default                    |
 | ------------------------ | ---------------------------------------------------------- | ---------------------------- |
 | `[project-name]`         | Project name / target directory. Prompted if omitted.      | —                             |
-| `-t, --template <name>`  | `landing` \| `dashboard` \| `blank`                        | prompted                     |
+| `-t, --template <name>`  | `landing` \| `dashboard` \| `blank` \| `blog` \| `ecommerce` | prompted                    |
 | `--supabase`             | Include Supabase client setup                              | prompted                     |
 | `--no-supabase`          | Skip Supabase                                               | —                             |
 | `--auth`                 | Include email/password auth (requires Supabase)            | prompted                     |
 | `--no-auth`              | Skip auth                                                   | —                             |
 | `--pwa`                  | Configure as a PWA (manifest, service worker, icons)        | prompted                     |
 | `--no-pwa`               | Skip PWA setup                                              | —                             |
+| `--stripe`               | Include Stripe checkout + pricing page                      | prompted                     |
+| `--no-stripe`            | Skip Stripe                                                  | —                             |
+| `--drizzle`              | Include Drizzle ORM (requires Supabase)                      | prompted                     |
+| `--no-drizzle`           | Skip Drizzle                                                 | —                             |
+| `--analytics`            | Include Vercel Analytics                                    | prompted                     |
+| `--no-analytics`         | Skip Vercel Analytics                                       | —                             |
+| `--author <name>`        | Author name, written to `package.json` and `LICENSE`        | prompted (from `git config user.name` if available) |
+| `--description <text>`   | Short project description, written to `package.json`        | prompted                     |
+| `--license <id>`         | `MIT` \| `Apache-2.0` \| `None`                              | prompted                     |
 | `--pm <manager>`         | `npm` \| `pnpm`                                             | detected from how you ran it |
 | `--skip-install`         | Don't run the package manager install step                 | `false`                       |
 | `--no-git`               | Don't run `git init` / initial commit                      | —                             |
 | `-y, --yes`              | Use defaults for anything not passed as a flag              | `false`                       |
 
-With `--yes`, unset options default to: `dashboard` template, Supabase **on**, auth **on**, PWA **off**.
+With `--yes`, unset options default to: `dashboard` template, Supabase **on**, auth **on**, PWA/Stripe/Drizzle/Analytics **off**, MIT license.
 
 ## What each template includes
 
@@ -58,23 +67,31 @@ Every project gets the same foundation regardless of template:
 - Inter, loaded via `next/font`.
 - ESLint + Prettier, configured to agree with each other.
 - A real, project-specific `CLAUDE.md` and `README.md` — not boilerplate placeholders.
+- A `LICENSE` file (unless you pick `--license None`) and `author`/`description`/`license` filled in on `package.json`.
 
 | Template    | Adds                                                                 |
 | ------------ | ----------------------------------------------------------------------- |
 | `landing`    | Marketing home page: header, hero, features grid, call-to-action, footer. |
 | `dashboard`  | App shell: responsive sidebar + header, an example dashboard page and a settings page. |
 | `blank`      | The shared foundation only — a single minimal page.                     |
+| `blog`       | Post list + post detail pages, backed by a static sample array (no CMS/MDX). |
+| `ecommerce`  | Product grid, product detail, and a cart page backed by a `localStorage` cart hook. |
 
-| Extra        | Adds                                                                 |
+| Extra         | Adds                                                                 |
 | ------------- | ----------------------------------------------------------------------- |
 | `--supabase`  | `src/lib/supabase/{client,server,middleware}.ts`, session-refresh middleware, `.env.example`. |
 | `--auth`      | Login/register pages, a protected `/profile` page, and route-protection middleware (requires `--supabase`). |
 | `--pwa`       | Web app manifest, a hand-written service worker, placeholder icons.      |
+| `--stripe`    | A single pricing/checkout page wired to a Stripe Checkout Session (server action + hosted redirect, no `@stripe/stripe-js`). |
+| `--drizzle`   | Drizzle ORM schema + client against Supabase's Postgres connection string, plus `db:push`/`db:studio` scripts (requires `--supabase`). |
+| `--analytics` | `@vercel/analytics` wired into the root layout.                         |
+
+`--pwa` and `--analytics` both need to add something to `src/app/layout.tsx`; they compose safely together via a small marker-based injection step in `generateProject` rather than one overwriting the other's file.
 
 ## Local development
 
 ```bash
-git clone https://github.com/ceibolabs/create-ceibo-app.git
+git clone https://github.com/Brunito06/create-ceibo-app.git
 cd create-ceibo-app
 npm install
 npm run build
@@ -97,4 +114,4 @@ Issues and pull requests are welcome. Please run `npm run lint`, `npm run typech
 
 ## Licence
 
-MIT © [Ceibo Labs](https://github.com/ceibolabs)
+MIT © [Brunito06](https://github.com/Brunito06)

@@ -59,6 +59,18 @@ export const TEMPLATES = [
     hint: "post list + post detail via Astro content collections",
     framework: "astro",
   },
+  {
+    id: "vite-blank",
+    label: "Blank",
+    hint: "minimal structure",
+    framework: "vite-react",
+  },
+  {
+    id: "vite-router",
+    label: "Router",
+    hint: "multi-page SPA with react-router",
+    framework: "vite-react",
+  },
 ] as const satisfies readonly TemplateDefinition[];
 
 export type Template = (typeof TEMPLATES)[number]["id"];

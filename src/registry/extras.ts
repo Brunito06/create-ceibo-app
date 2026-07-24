@@ -85,10 +85,9 @@ export const EXTRAS = [
   {
     id: "drizzle",
     label: "Drizzle",
-    hint: "schema, db client, migrations config",
+    hint: "schema, db client, migrations config — any Postgres provider",
     layer: "extras/drizzle",
-    dependsOn: "supabase",
-    promptMessage: "Include Drizzle ORM (uses the Supabase connection string)?",
+    promptMessage: "Include Drizzle ORM (works with any Postgres connection string)?",
     yesDefault: false,
   },
   {
@@ -101,6 +100,42 @@ export const EXTRAS = [
     layoutInjection: {
       imports: ['import { Analytics } from "@vercel/analytics/next";'],
       body: "<Analytics />",
+    },
+  },
+  {
+    id: "testing",
+    label: "Testing",
+    hint: "Vitest + React Testing Library, example component test",
+    layer: "extras/testing",
+    promptMessage: "Include a component testing setup (Vitest + Testing Library)?",
+    yesDefault: false,
+  },
+  {
+    id: "i18n",
+    label: "i18n",
+    hint: "next-intl, cookie-based locale, server-translated demo page",
+    layer: "extras/i18n",
+    promptMessage: "Include i18n (next-intl)?",
+    yesDefault: false,
+  },
+  {
+    id: "email",
+    label: "Email (Resend)",
+    hint: "transactional email, working send action + demo form",
+    layer: "extras/email",
+    promptMessage: "Include transactional email (Resend)?",
+    yesDefault: false,
+  },
+  {
+    id: "sentry",
+    label: "Sentry",
+    hint: "client-side error tracking",
+    layer: "extras/sentry",
+    promptMessage: "Include Sentry error tracking (client-side)?",
+    yesDefault: false,
+    layoutInjection: {
+      imports: ['import { SentryInit } from "@/components/shared/sentry-init";'],
+      body: "<SentryInit />",
     },
   },
 ] as const satisfies readonly ExtraDefinition[];

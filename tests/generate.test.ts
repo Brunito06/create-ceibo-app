@@ -20,6 +20,10 @@ function baseOptions(overrides: Partial<ProjectOptions>): ProjectOptions {
     stripe: false,
     drizzle: false,
     analytics: false,
+    testing: false,
+    i18n: false,
+    email: false,
+    sentry: false,
     packageManager: "npm",
     skipInstall: true,
     skipGit: true,
@@ -176,6 +180,51 @@ describe("generateProject", () => {
     expect(post).not.toContain("__APP_TITLE__");
   });
 
+  it("generates a vite-blank project with no Next.js/Astro files", async () => {
+    const targetDir = path.join(workDir, "vite-blank-app");
+    const options = baseOptions({
+      targetDir,
+      framework: "vite-react",
+      template: "vite-blank",
+    });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "index.html"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "main.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "App.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "app"))).toBe(false);
+    expect(existsSync(file(targetDir, "src", "pages"))).toBe(false);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies.react).toBeDefined();
+    expect(pkg.dependencies.next).toBeUndefined();
+    expect(pkg.dependencies.astro).toBeUndefined();
+
+    const html = readFileSync(file(targetDir, "index.html"), "utf8");
+    expect(html).not.toContain("__APP_TITLE__");
+    expect(html).toContain("Test App");
+  });
+
+  it("generates a vite-router project with react-router and two pages", async () => {
+    const targetDir = path.join(workDir, "vite-router-app");
+    const options = baseOptions({
+      targetDir,
+      framework: "vite-react",
+      template: "vite-router",
+    });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "App.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "components", "layout.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "pages", "home.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "pages", "about.tsx"))).toBe(true);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies["react-router"]).toBeDefined();
+  });
+
   it("generates a portfolio project with projects and experience content", async () => {
     const targetDir = path.join(workDir, "portfolio-app");
     const options = baseOptions({ targetDir, template: "portfolio" });
@@ -298,17 +347,19 @@ describe("generateProject", () => {
     expect(pkg.dependencies.stripe).toBeDefined();
   });
 
-  it("forces drizzle off when supabase is not selected, even if requested", async () => {
-    const targetDir = path.join(workDir, "drizzle-no-supabase-app");
+  it("generates a project with drizzle standalone (no supabase required)", async () => {
+    const targetDir = path.join(workDir, "drizzle-standalone-app");
     const options = baseOptions({ targetDir, drizzle: true, supabase: false });
 
     await generateProject(options);
 
-    expect(existsSync(file(targetDir, "drizzle.config.ts"))).toBe(false);
-    expect(existsSync(file(targetDir, "src", "lib", "db"))).toBe(false);
+    expect(existsSync(file(targetDir, "drizzle.config.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "lib", "db", "schema.ts"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "lib", "supabase"))).toBe(false);
 
     const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
-    expect(pkg.dependencies["drizzle-orm"]).toBeUndefined();
+    expect(pkg.dependencies["drizzle-orm"]).toBeDefined();
+    expect(pkg.dependencies["@supabase/ssr"]).toBeUndefined();
   });
 
   it("generates a project with supabase + drizzle, merging both .env.example blocks", async () => {
@@ -358,6 +409,46 @@ describe("generateProject", () => {
     expect(layout).not.toContain("__LAYOUT_IMPORTS__");
     expect(layout).not.toContain("__LAYOUT_EXPORTS__");
     expect(layout).not.toContain("__BODY_EXTRAS__");
+  });
+
+  it("generates a project with a working Resend contact form", async () => {
+    const targetDir = path.join(workDir, "email-app");
+    const options = baseOptions({ targetDir, email: true });
+
+    await generateProject(options);
+
+    expect(existsSync(file(targetDir, "src", "app", "email", "page.tsx"))).toBe(true);
+    expect(existsSync(file(targetDir, "src", "components", "shared", "email-form.tsx"))).toBe(
+      true,
+    );
+    expect(existsSync(file(targetDir, "src", "lib", "email", "actions.ts"))).toBe(true);
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies.resend).toBeDefined();
+
+    const env = readFileSync(file(targetDir, ".env.example"), "utf8");
+    expect(env).toContain("RESEND_API_KEY");
+    expect(env).toContain("EMAIL_FROM");
+  });
+
+  it("generates a project with Sentry wired into layout.tsx", async () => {
+    const targetDir = path.join(workDir, "sentry-app");
+    const options = baseOptions({ targetDir, sentry: true });
+
+    await generateProject(options);
+
+    const layout = readFileSync(file(targetDir, "src", "app", "layout.tsx"), "utf8");
+    expect(layout).toContain('import { SentryInit } from "@/components/shared/sentry-init";');
+    expect(layout).toContain("<SentryInit />");
+    expect(layout).not.toContain("__LAYOUT_IMPORTS__");
+    expect(layout).not.toContain("__LAYOUT_EXPORTS__");
+    expect(layout).not.toContain("__BODY_EXTRAS__");
+
+    const pkg = JSON.parse(readFileSync(file(targetDir, "package.json"), "utf8"));
+    expect(pkg.dependencies["@sentry/nextjs"]).toBeDefined();
+
+    const env = readFileSync(file(targetDir, ".env.example"), "utf8");
+    expect(env).toContain("NEXT_PUBLIC_SENTRY_DSN");
   });
 
   it("generates a blog project with sample posts and a working slug page", async () => {

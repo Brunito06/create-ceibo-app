@@ -22,6 +22,10 @@ function baseOptions(overrides: Partial<ProjectOptions>): ProjectOptions {
     stripe: false,
     drizzle: false,
     analytics: false,
+    testing: false,
+    i18n: false,
+    email: false,
+    sentry: false,
     packageManager: "npm",
     skipInstall: true,
     skipGit: true,
@@ -74,15 +78,29 @@ describe("runAddExtra", () => {
     const targetDir = path.join(workDir, "my-app");
     await generateWithConfig({ targetDir });
 
-    await runAddExtra(["drizzle", "--dir", targetDir]);
+    await runAddExtra(["auth", "--dir", targetDir]);
 
     expect(process.exitCode).toBe(1);
-    expect(existsSync(path.join(targetDir, "drizzle.config.ts"))).toBe(false);
+    expect(existsSync(path.join(targetDir, "src", "app", "login", "page.tsx"))).toBe(false);
   });
 
-  it("adds drizzle once its dependency (supabase) is already enabled", async () => {
+  it("adds auth once its dependency (supabase) is already enabled", async () => {
     const targetDir = path.join(workDir, "my-app");
     await generateWithConfig({ targetDir, supabase: true });
+
+    await runAddExtra(["auth", "--dir", targetDir]);
+
+    expect(process.exitCode).toBeUndefined();
+    expect(existsSync(path.join(targetDir, "src", "app", "login", "page.tsx"))).toBe(true);
+
+    const config = JSON.parse(readFileSync(path.join(targetDir, "ceibo.config.json"), "utf8"));
+    expect(config.auth).toBe(true);
+    expect(config.supabase).toBe(true);
+  });
+
+  it("adds drizzle standalone without needing supabase", async () => {
+    const targetDir = path.join(workDir, "my-app");
+    await generateWithConfig({ targetDir });
 
     await runAddExtra(["drizzle", "--dir", targetDir]);
 
@@ -91,7 +109,6 @@ describe("runAddExtra", () => {
 
     const config = JSON.parse(readFileSync(path.join(targetDir, "ceibo.config.json"), "utf8"));
     expect(config.drizzle).toBe(true);
-    expect(config.supabase).toBe(true);
   });
 
   it("refuses to add an extra that conflicts with one already enabled", async () => {

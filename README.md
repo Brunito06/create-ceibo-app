@@ -34,7 +34,7 @@ npx create-ceibo-app my-app --template dashboard --supabase --auth --pwa --pm pn
 | Flag                    | Description                                              | Default                    |
 | ------------------------ | ---------------------------------------------------------- | ---------------------------- |
 | `[project-name]`         | Project name / target directory. Prompted if omitted.      | —                             |
-| `-f, --framework <name>` | `nextjs` \| `astro`                                         | prompted                     |
+| `-f, --framework <name>` | `nextjs` \| `astro` \| `vite-react`                          | prompted                     |
 | `-t, --template <name>`  | Depends on `--framework` — see the tables below             | prompted                     |
 | `--supabase`             | Include Supabase client setup (Next.js only)                | prompted                     |
 | `--no-supabase`          | Skip Supabase                                               | —                             |
@@ -48,10 +48,18 @@ npx create-ceibo-app my-app --template dashboard --supabase --auth --pwa --pm pn
 | `--no-pwa`               | Skip PWA setup                                              | —                             |
 | `--stripe`               | Include Stripe checkout + pricing page                      | prompted                     |
 | `--no-stripe`            | Skip Stripe                                                  | —                             |
-| `--drizzle`              | Include Drizzle ORM (requires Supabase)                      | prompted                     |
+| `--drizzle`              | Include Drizzle ORM (any Postgres provider)                  | prompted                     |
 | `--no-drizzle`           | Skip Drizzle                                                 | —                             |
 | `--analytics`            | Include Vercel Analytics                                    | prompted                     |
 | `--no-analytics`         | Skip Vercel Analytics                                       | —                             |
+| `--testing`              | Include a component testing setup (Vitest + Testing Library) | prompted                    |
+| `--no-testing`           | Skip the testing setup                                      | —                             |
+| `--i18n`                 | Include i18n (next-intl)                                    | prompted                     |
+| `--no-i18n`              | Skip i18n                                                    | —                             |
+| `--email`                | Include transactional email (Resend)                        | prompted                     |
+| `--no-email`             | Skip the email extra                                         | —                             |
+| `--sentry`               | Include Sentry error tracking (client-side)                  | prompted                     |
+| `--no-sentry`            | Skip Sentry                                                  | —                             |
 | `--author <name>`        | Author name, written to `package.json` and `LICENSE`        | prompted (from `git config user.name` if available) |
 | `--description <text>`   | Short project description, written to `package.json`        | prompted                     |
 | `--license <id>`         | `MIT` \| `Apache-2.0` \| `None`                              | prompted                     |
@@ -100,10 +108,14 @@ Every Next.js project gets the same foundation regardless of template:
 | `--forms`     | A `/contact` page using react-hook-form + zod, ready to reuse for other forms. |
 | `--pwa`       | Web app manifest, a hand-written service worker, placeholder icons.      |
 | `--stripe`    | A single pricing/checkout page wired to a Stripe Checkout Session (server action + hosted redirect, no `@stripe/stripe-js`). |
-| `--drizzle`   | Drizzle ORM schema + client against Supabase's Postgres connection string, plus `db:push`/`db:studio` scripts (requires `--supabase`). |
+| `--drizzle`   | Drizzle ORM schema + client, plus `db:push`/`db:studio` scripts. Works with any Postgres connection string — Neon, Supabase, Railway, local. |
 | `--analytics` | `@vercel/analytics` wired into the root layout.                         |
+| `--testing`   | Vitest + React Testing Library, configured for the shadcn/ui setup, with an example component test. |
+| `--i18n`      | next-intl with a cookie-based locale, English/Spanish message files, and a server-translated `/i18n-demo` page. |
+| `--email`     | A `/email` page with a working react-hook-form + zod contact form that actually sends via Resend (server action). |
+| `--sentry`    | `@sentry/nextjs` client-side error tracking, initialized from the root layout (no-op without a DSN). |
 
-`--pwa` and `--analytics` both need to add something to `src/app/layout.tsx`; they compose safely together via a small marker-based injection step in `generateProject` rather than one overwriting the other's file.
+`--pwa`, `--analytics` and `--sentry` all need to add something to `src/app/layout.tsx`; they compose safely together via a small marker-based injection step in `generateProject` rather than one overwriting the other's file.
 
 ### Astro (`--framework astro`)
 
@@ -117,6 +129,18 @@ A separate, minimal foundation — no shadcn/ui, no extras (all extras above are
 | -------------- | -------------------------------------------------------- |
 | `astro-blank`  | A single minimal page.                                  |
 | `astro-blog`   | Post list + post detail, content defined as Markdown files under `src/content/posts/`. |
+
+### Vite + React (`--framework vite-react`)
+
+Another separate, minimal foundation — a pure client-side SPA (no SSR, no shadcn/ui, no extras):
+
+- Vite 6 + React 19, TypeScript strict mode (`npm run build` type-checks first).
+- Tailwind CSS v4 via `@tailwindcss/vite`.
+
+| Template       | Adds                                                    |
+| --------------- | -------------------------------------------------------- |
+| `vite-blank`    | A single minimal page.                                  |
+| `vite-router`   | Multi-page SPA using react-router (`createBrowserRouter`), with a shared layout and two example pages. |
 
 ## Replaying the same setup
 

@@ -1,0 +1,7 @@
+{
+  "i18nDemo": {
+    "title": "Internationalization demo",
+    "description": "This page's text comes from src/messages/'{locale}'.json — no hardcoded strings.",
+    "switchTo": "Switch to Español"
+  }
+}

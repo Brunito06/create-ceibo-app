@@ -1,0 +1,73 @@
+{
+  "name": "create-ceibo-app",
+  "version": "0.1.0",
+  "description": "Scaffold a new Next.js + Supabase + Tailwind + shadcn/ui project with Ceibo Labs conventions.",
+  "keywords": [
+    "create-app",
+    "scaffold",
+    "boilerplate",
+    "generator",
+    "nextjs",
+    "next.js",
+    "supabase",
+    "tailwindcss",
+    "shadcn",
+    "shadcn-ui",
+    "cli",
+    "starter",
+    "template"
+  ],
+  "homepage": "https://github.com/ceibolabs/create-ceibo-app#readme",
+  "bugs": {
+    "url": "https://github.com/ceibolabs/create-ceibo-app/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ceibolabs/create-ceibo-app.git"
+  },
+  "license": "MIT",
+  "author": {
+    "name": "Ceibo Labs",
+    "url": "https://github.com/ceibolabs"
+  },
+  "type": "module",
+  "bin": {
+    "create-ceibo-app": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.9.1",
+    "commander": "^13.1.0",
+    "execa": "^9.5.2",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@types/node": "^22.13.4",
+    "@typescript-eslint/eslint-plugin": "^8.24.0",
+    "@typescript-eslint/parser": "^8.24.0",
+    "eslint": "^9.20.1",
+    "eslint-config-prettier": "^10.0.1",
+    "prettier": "^3.5.1",
+    "tsup": "^8.3.6",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  }
+}

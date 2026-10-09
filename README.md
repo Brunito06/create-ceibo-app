@@ -190,5 +190,4 @@ Templates, extras, frameworks and licenses are all defined in `src/registry/` â€
 Issues and pull requests are welcome. Please run `npm run lint`, `npm run typecheck` and `npm test` before opening a PR.
 
 ## Licence
-
 MIT Â© [Brunito06](https://github.com/Brunito06)
